@@ -2,6 +2,8 @@
 'use strict';
 const rp = require('request-promise');
 const iconv = require('iconv-lite');
+const PromisePool = require('es6-promise-pool');
+const ProgressBar = require('progress');
 
 const headers = {
   'cookie': 'frankie=1; xtvrn=$535162$; __auc=04a7d70b1615c6a2d0c4bdb8b2d; default_ca=15_s; md=th; ref_go_back=https%3A%2F%2Fwww2.yapo.cl; acc_session=57fc2cdadacefa1f50e491110ff90131417a1ef0; __cfduid=d816887118711e17a63c5e0f1156005161529280245; stat_counter=1; sq=(null)&w=-1&cg=0&f=a',
@@ -11,20 +13,14 @@ const headers = {
 };
 
 module.exports = function(Ad) {
-  Ad.scrape = function(msg, cb) {
-    createAllRequests(38000)
-      .then(function(response) {
-        Promise.all(response)
-          .then(function(responseArray) {
-            Ad.create(responseArray)
-              .then(function(insertedData) {
-                cb(null, insertedData.length());
-              });
-          })
-          .catch(function(error) {
-            cb(error);
-          });
 
+  let currentPage = 0;
+  let totalPages = 0;
+  Ad.scrape = function(msg, cb) {
+    totalPages = 10000;
+    consume()
+      .then(function(response) {
+        cb(null, response);
       })
       .catch(function(error) {
         cb(error);
@@ -58,30 +54,46 @@ module.exports = function(Ad) {
     });
   };
 
-  function createAllRequests(totalPages) {
-    return new Promise(function(resolve, reject) {
-      let allRequests = [];
-      for (let i = 1; i <= totalPages; i++) {
-        let filters = { o: i };
-        let url = 'https://www.yapo.cl/merken/v1/listing';
-        let options = {
-          headers: headers,
-          encoding: null,
-          uri: url + '?o=' + filters.o,
-        };
-        let request = rp(options)
-          .then(function(response) {
-            let responseData = iconv.decode(response, 'iso-8859-1');
-            let ads = JSON.parse(responseData).data.ads;
-            Ad.create(ads);
-            return JSON.parse(responseData).data.ads;
-          })
-          .catch(function(error) {
-            return error;
-          });
-        allRequests.push(request);
-      }
-      resolve(allRequests);
+  function consume() {
+    return new Promise((resolve, reject) => {
+      const pool = new PromisePool(promiseProducer, 10);
+      console.log('Start: ', new Date());
+
+      pool.start()
+        .then(function(data) {
+          console.log('Finish: ', new Date());
+          resolve(data);
+        });
     });
+  }
+
+  function promiseProducer() {
+    const bar = new ProgressBar(':bar', { total: totalPages });
+    if (currentPage < totalPages) {
+      currentPage++;
+      bar.tick();
+      console.log('pagina actual', currentPage);
+      return promiseRequest(currentPage);
+    } else {
+      return null;
+    }
+  }
+
+  function promiseRequest(page) {
+    let filters = { o: page };
+    let url = 'https://www.yapo.cl/merken/v1/listing';
+    let options = {
+      headers: headers,
+      encoding: null,
+      uri: url + '?o=' + filters.o,
+    };
+    return rp(options)
+      .then(function(response) {
+        let responseData = iconv.decode(response, 'iso-8859-1');
+        return Ad.create(JSON.parse(responseData).data.ads);
+      })
+      .catch(function(error) {
+        return error;
+      });
   }
 };

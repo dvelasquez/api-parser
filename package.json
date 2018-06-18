@@ -13,12 +13,14 @@
   "dependencies": {
     "compression": "^1.0.3",
     "cors": "^2.5.2",
+    "es6-promise-pool": "^2.5.0",
     "helmet": "^3.10.0",
     "iconv-lite": "^0.4.21",
-    "loopback": "^3.0.0",
+    "loopback": "^3.20.0",
     "loopback-boot": "^2.6.5",
     "loopback-component-explorer": "^5.0.0",
     "loopback-connector-mongodb": "^1.18.1",
+    "progress": "^2.0.0",
     "request-promise": "^4.2.2",
     "serve-favicon": "^2.0.1",
     "strong-error-handler": "^2.0.0"
