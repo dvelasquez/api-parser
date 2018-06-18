@@ -1,0 +1,21 @@
+{
+  "db": {
+    "name": "db",
+    "connector": "memory"
+  },
+  "file-db": {
+    "name": "file-db",
+    "connector": "memory",
+    "file": "db/file-db.json"
+  },
+  "parser": {
+    "host": "localhost",
+    "port": 27017,
+    "url": "mongodb://parser-admin:parseradmin123.-@localhost:27017/yapo-parser",
+    "database": "yapo-parser",
+    "password": "parseradmin123.-",
+    "name": "parser",
+    "user": "parser-admin",
+    "connector": "mongodb"
+  }
+}
